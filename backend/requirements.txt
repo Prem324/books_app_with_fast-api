@@ -7,4 +7,5 @@ passlib
 python-dotenv
 python-multipart
 requests
+email-validator
 
