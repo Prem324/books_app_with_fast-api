@@ -13,7 +13,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 1
 
 if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY is missing. Set it in backend/.env")
+    raise RuntimeError("SECRET_KEY is missing in environment variables")
 
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 security = HTTPBearer()
