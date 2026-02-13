@@ -15,14 +15,31 @@ class UserLogin(BaseModel):
 
 class TokenResponse(BaseModel):
     token: str
+    refresh_token: str
+    token_type: str = "bearer"
 
 
 class UserPublic(BaseModel):
     id: int
     name: str
     email: EmailStr
+    role: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(min_length=4, max_length=10)
+    new_password: str = Field(min_length=6, max_length=128)
 
 
 # Books
@@ -53,3 +70,15 @@ class BookOut(BaseModel):
     owner_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PaginationMeta(BaseModel):
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+
+
+class BookListResponse(BaseModel):
+    items: list[BookOut]
+    meta: PaginationMeta

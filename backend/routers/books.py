@@ -128,16 +128,25 @@ def add_book(
 
 
 # Get Books
-@router.get("/", response_model=list[schemas.BookOut])
+@router.get("/", response_model=schemas.BookListResponse)
 def get_books(
     title: str | None = Query(default=None),
     author: str | None = Query(default=None),
     year: int | None = Query(default=None),
     isbn: str | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=100),
+    sort: str = Query(default="latest", pattern="^(latest|oldest|az)$"),
     db: Session = Depends(get_db),
     user_id: int = Depends(auth.get_current_user_id),
 ):
-    query = db.query(models.Book).filter(models.Book.owner_id == user_id)
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+    query = db.query(models.Book)
+    if user.role != "admin":
+        query = query.filter(models.Book.owner_id == user_id)
 
     if title:
         query = query.filter(models.Book.title.ilike(f"%{title}%"))
@@ -148,7 +157,26 @@ def get_books(
     if isbn:
         query = query.filter(models.Book.isbn.ilike(f"%{isbn}%"))
 
-    return query.order_by(models.Book.id.desc()).all()
+    if sort == "oldest":
+        query = query.order_by(models.Book.id.asc())
+    elif sort == "az":
+        query = query.order_by(models.Book.title.asc())
+    else:
+        query = query.order_by(models.Book.id.desc())
+
+    total = query.count()
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    items = query.offset((page - 1) * page_size).limit(page_size).all()
+
+    return {
+        "items": items,
+        "meta": {
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "total_pages": total_pages,
+        },
+    }
 
 
 @router.put("/{book_id}", response_model=schemas.BookOut)
@@ -158,11 +186,14 @@ def update_book(
     db: Session = Depends(get_db),
     user_id: int = Depends(auth.get_current_user_id),
 ):
-    db_book = (
-        db.query(models.Book)
-        .filter(models.Book.id == book_id, models.Book.owner_id == user_id)
-        .first()
-    )
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+    query = db.query(models.Book).filter(models.Book.id == book_id)
+    if user.role != "admin":
+        query = query.filter(models.Book.owner_id == user_id)
+    db_book = query.first()
 
     if not db_book:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
@@ -185,11 +216,14 @@ def upload_book_image(
     db: Session = Depends(get_db),
     user_id: int = Depends(auth.get_current_user_id),
 ):
-    db_book = (
-        db.query(models.Book)
-        .filter(models.Book.id == book_id, models.Book.owner_id == user_id)
-        .first()
-    )
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+    query = db.query(models.Book).filter(models.Book.id == book_id)
+    if user.role != "admin":
+        query = query.filter(models.Book.owner_id == user_id)
+    db_book = query.first()
 
     if not db_book:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
@@ -208,11 +242,14 @@ def delete_book(
     db: Session = Depends(get_db),
     user_id: int = Depends(auth.get_current_user_id),
 ):
-    db_book = (
-        db.query(models.Book)
-        .filter(models.Book.id == book_id, models.Book.owner_id == user_id)
-        .first()
-    )
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+    query = db.query(models.Book).filter(models.Book.id == book_id)
+    if user.role != "admin":
+        query = query.filter(models.Book.owner_id == user_id)
+    db_book = query.first()
 
     if not db_book:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
