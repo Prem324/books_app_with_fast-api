@@ -70,6 +70,8 @@ export default function Login() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             required
+            autoComplete="email"
+            autoFocus
           />
         </label>
 
@@ -81,6 +83,8 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Your password"
             required
+            autoComplete="current-password"
+            minLength={6}
           />
         </label>
 
@@ -97,6 +101,7 @@ export default function Login() {
             Create account
           </button>
         </div>
+        <p className="helper">We only use your email to sign you in.</p>
 
         <Toast message={toast.text} type={toast.type} />
       </form>

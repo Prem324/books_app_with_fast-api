@@ -69,6 +69,8 @@ export default function Register() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
+            autoComplete="name"
+            autoFocus
           />
         </label>
 
@@ -80,6 +82,7 @@ export default function Register() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"
           />
         </label>
 
@@ -91,6 +94,8 @@ export default function Register() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoComplete="new-password"
+            minLength={6}
           />
         </label>
 
@@ -107,6 +112,7 @@ export default function Register() {
             Back to login
           </button>
         </div>
+        <p className="helper">Use a strong password. You can change it later.</p>
 
         <Toast message={toast.text} type={toast.type} />
       </form>
