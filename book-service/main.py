@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
-    logger.info("Starting up book-service...")
+    logger.info(f"Starting up book-service...")
+    logger.info(f"Configured AUTH_SERVICE_URL: {settings.AUTH_SERVICE_URL}")
     # migrations are now handled via Alembic
     yield
     # Shutdown logic

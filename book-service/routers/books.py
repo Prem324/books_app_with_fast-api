@@ -122,8 +122,10 @@ async def get_current_user(
 
     async with httpx.AsyncClient() as client:
         try:
+            target_url = f"{settings.AUTH_SERVICE_URL.rstrip('/')}/users/validate"
+            logger.info(f"Attempting to validate token at: {target_url}")
             res = await client.get(
-                f"{settings.AUTH_SERVICE_URL}/users/validate",
+                target_url,
                 headers={"Authorization": f"Bearer {token}"},
                 timeout=5,
             )
