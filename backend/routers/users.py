@@ -1,11 +1,10 @@
 import os
 import secrets
-import smtplib
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from email.mime.text import MIMEText
+import requests
 
 import models, schemas, auth
 from database import SessionLocal
@@ -22,28 +21,34 @@ def get_db():
 
 
 def _send_email(to_email: str, subject: str, body: str) -> None:
-    host = os.getenv("SMTP_HOST")
-    port = int(os.getenv("SMTP_PORT", "587"))
-    username = os.getenv("SMTP_USER")
-    password = os.getenv("SMTP_PASS")
-    from_email = os.getenv("SMTP_FROM", username)
-
-    if not host or not from_email:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Email service is not configured.",
+    resend_api_key = os.getenv("RESEND_API_KEY")
+    resend_from = os.getenv("RESEND_FROM")
+    if resend_api_key and resend_from:
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": resend_from,
+                "to": [to_email],
+                "subject": subject,
+                "text": body,
+            },
+            timeout=20,
         )
+        if response.status_code not in (200, 201):
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Failed to send email.",
+            )
+        return
 
-    message = MIMEText(body)
-    message["Subject"] = subject
-    message["From"] = from_email
-    message["To"] = to_email
-
-    with smtplib.SMTP(host, port, timeout=20) as server:
-        server.starttls()
-        if username and password:
-            server.login(username, password)
-        server.send_message(message)
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Email service is not configured.",
+    )
 
 
 def get_current_user(
